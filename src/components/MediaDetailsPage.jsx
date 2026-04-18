@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Play, Plus, Star, Calendar, Clock, X } from 'lucide-react';
 import { getCredits, getImages, getDetails, getVideos } from '../api/tmdbApi';
+import { getCustomYouTubeVideos } from '../api/youtubeApi';
 import ActorDetailsPage from './ActorDetailsPage';
 import './MediaDetailsPage.css';
 
@@ -12,6 +13,7 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick }) => {
   const [showTrailer, setShowTrailer] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [selectedActor, setSelectedActor] = useState(null);
+  const [customYtVideos, setCustomYtVideos] = useState([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -37,8 +39,18 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick }) => {
       }
     };
 
+    const fetchCustomVideos = async () => {
+       const movieTitle = (media?.title || media?.name || media?.original_title || '').toLowerCase().trim();
+       if (!movieTitle) return;
+
+       const allYtVideos = await getCustomYouTubeVideos();
+       const matchedVideos = allYtVideos.filter(v => v.title.toLowerCase().includes(movieTitle));
+       setCustomYtVideos(matchedVideos);
+    };
+
     if (media && media.id) {
         fetchDetailedData();
+        fetchCustomVideos();
     }
   }, [media]);
 
@@ -113,6 +125,24 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick }) => {
             </div>
           </div>
         )}
+
+      {customYtVideos.length > 0 && (
+        <div className="custom-youtube-section" style={{ padding: '0', marginTop: '40px' }}>
+          <h2 className="section-title">Soundtrack & Videos</h2>
+          <div className="custom-youtube-row">
+            {customYtVideos.map((vid, idx) => (
+               <div key={idx} className="yt-card" onClick={() => { setTrailerKey(vid.youtubeLinkID); setShowTrailer(true); }}>
+                 <div className="yt-thumbnail-wrapper">
+                    <img src={vid.thumbnail} alt={vid.title} className="yt-thumbnail" loading="lazy" />
+                    <div className="yt-play-overlay"><Play size={32} fill="currentColor"/></div>
+                    {vid.resolution && <span className="yt-resolution-badge">{vid.resolution}</span>}
+                 </div>
+                 <span className="yt-title">{vid.title}</span>
+               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
         {backdrops.length > 0 && (
           <div className="section-block" style={{ marginTop: '40px' }}>
