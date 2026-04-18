@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './MediaRow.css';
 
-const MediaRow = ({ title, items, onMediaClick, mediaType }) => {
+const MediaRow = ({ title, items, onMediaClick, mediaType, watchedIds = new Set() }) => {
   const rowRef = useRef(null);
 
   const scroll = (direction) => {
@@ -37,6 +37,7 @@ const MediaRow = ({ title, items, onMediaClick, mediaType }) => {
                 className="row-poster-wrap"
                 onClick={() => onMediaClick(enhancedItem)}
               >
+                {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, left: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched ✅</div>}
                 <img
                   className={`row-poster ${item.backdrop_path ? 'backdrop' : 'portrait'}`}
                   src={

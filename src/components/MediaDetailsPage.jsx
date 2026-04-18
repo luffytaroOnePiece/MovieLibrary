@@ -5,7 +5,7 @@ import { getCustomYouTubeVideos } from '../api/youtubeApi';
 import ActorDetailsPage from './ActorDetailsPage';
 import './MediaDetailsPage.css';
 
-const MediaDetailsPage = ({ media, onBack, onMediaClick }) => {
+const MediaDetailsPage = ({ media, onBack, onMediaClick, watchedIds = new Set() }) => {
   const [credits, setCredits] = useState(null);
   const [images, setImages] = useState(null);
   const [fullDetails, setFullDetails] = useState(null);
@@ -81,10 +81,13 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick }) => {
         <div className="details-hero-content">
           <h1 className="details-title">{title}</h1>
           <div className="details-meta">
-             <span className="details-rating"><Star size={16} fill="currentColor" /> {(displayData.vote_average * 10).toFixed(0)}% Match</span>
-             {releaseYear && <span><Calendar size={16} /> {releaseYear}</span>}
-             {runtime && <span><Clock size={16} /> {Math.floor(runtime / 60)}h {runtime % 60}m</span>}
-             {genres && <span>{genres}</span>}
+            <div className="meta-strip">
+              {watchedIds.has(media.id) && <span style={{ color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '4px 10px', borderRadius: '4px', fontWeight: '800', border: '1px solid #10b981' }}>✅ Watched</span>}
+              <span className="meta-match"><Star size={16} fill="currentColor" /> {(displayData.vote_average * 10).toFixed(0)}% Match</span>
+              {releaseYear && <span className="meta-year"><Calendar size={16} /> {releaseYear}</span>}
+              {runtime && <span className="meta-runtime"><Clock size={16} /> {Math.floor(runtime / 60)}h {runtime % 60}m</span>}
+              {genres && <span>{genres}</span>}
+            </div>
           </div>
           <p className="details-overview">{displayData.overview}</p>
           <div className="details-actions">

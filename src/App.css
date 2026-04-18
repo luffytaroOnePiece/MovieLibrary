@@ -155,3 +155,55 @@
   animation: spin 1s linear infinite;
   color: var(--text-secondary);
 }
+
+.apple-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  transition: opacity 0.2s ease;
+}
+
+.apple-select-wrapper:hover {
+  background-color: transparent;
+  border: none;
+  opacity: 0.6;
+}
+
+.apple-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding: 4px 28px 4px 0;
+  cursor: pointer;
+  outline: none;
+  width: 100%;
+}
+
+.apple-select option {
+  background: #1c1c1e;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.apple-select-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-40%);
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  opacity: 0.9;
+}
