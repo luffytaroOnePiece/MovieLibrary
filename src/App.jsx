@@ -319,7 +319,8 @@ function App() {
       {fullPageMedia ? (
         <MediaDetailsPage 
           media={fullPageMedia} 
-          onBack={() => setFullPageMedia(null)} 
+          onBack={() => setFullPageMedia(null)}
+          onMediaClick={(m) => setFullPageMedia(m)}
         />
       ) : (
         <>

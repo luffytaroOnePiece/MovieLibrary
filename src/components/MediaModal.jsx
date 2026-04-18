@@ -1,15 +1,33 @@
-import React, { useEffect } from 'react';
-import { X, Play, Plus, ThumbsUp, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Play, Info, Star, Calendar } from 'lucide-react';
+import { getVideos } from '../api/tmdbApi';
 import './MediaModal.css';
 
 const MediaModal = ({ media, onClose, onShowFullDetails }) => {
+  const [trailerKey, setTrailerKey] = useState(null);
+  const [showTrailer, setShowTrailer] = useState(false);
+
   useEffect(() => {
     // Prevent background scrolling when modal is open
     document.body.style.overflow = 'hidden';
+    
+    const fetchTrailer = async () => {
+       const type = media?.media_type || (media?.name ? 'tv' : 'movie');
+       if(!media || !media.id) return;
+       const res = await getVideos(media.id, type);
+       if (res && res.results) {
+         const t = res.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || res.results[0];
+         if (t && t.site === 'YouTube') {
+           setTrailerKey(t.key);
+         }
+       }
+    };
+    fetchTrailer();
+
     return () => {
       document.body.style.overflow = 'auto';
     };
-  }, []);
+  }, [media]);
 
   if (!media) return null;
 
@@ -37,21 +55,28 @@ const MediaModal = ({ media, onClose, onShowFullDetails }) => {
           
           <div className="modal-hero-content">
             <h2 className="title-large modal-title">{title}</h2>
-            <div className="modal-meta-actions">
-              <button className="btn-primary">
-                <Play size={20} fill="currentColor" /> Play
-              </button>
-              <button className="icon-btn-circle">
-                <Plus size={24} />
-              </button>
-              <button className="icon-btn-circle">
-                <ThumbsUp size={20} />
-              </button>
-              {onShowFullDetails && (
-                <button className="icon-btn-circle" onClick={onShowFullDetails} title="Full Details">
-                  <Info size={24} />
+            <div className="modal-meta-actions" style={{ flexWrap: 'wrap', gap: '12px', width: '100%' }}>
+              {trailerKey && (
+                <button className="btn-primary" onClick={() => setShowTrailer(true)}>
+                  <Play size={20} fill="currentColor" /> Play Trailer
                 </button>
               )}
+              {onShowFullDetails && (
+                <button 
+                  className="btn-secondary" 
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 32px', borderRadius: '40px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: '#fff', fontSize: '1.1rem', fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' }} 
+                  onClick={onShowFullDetails}
+                >
+                  <Info size={20} /> Full Details
+                </button>
+              )}
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto', fontSize: '1rem', color: '#fff', background: 'rgba(0,0,0,0.5)', padding: '10px 20px', borderRadius: '30px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <span style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Star size={16} fill="currentColor" /> {(media.vote_average * 10).toFixed(0)}% Match
+                </span>
+                {releaseYear && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={16} /> {releaseYear}</span>}
+              </div>
             </div>
           </div>
         </div>
@@ -83,6 +108,23 @@ const MediaModal = ({ media, onClose, onShowFullDetails }) => {
           </div>
         </div>
       </div>
+
+      {showTrailer && trailerKey && (
+        <div className="lightbox-overlay" style={{ zIndex: 3000 }} onClick={(e) => { e.stopPropagation(); setShowTrailer(false); }}>
+          <button className="lightbox-close" onClick={(e) => { e.stopPropagation(); setShowTrailer(false); }}><X size={32}/></button>
+          <div className="video-container" onClick={e => e.stopPropagation()}>
+            <iframe 
+               width="100%" 
+               height="100%" 
+               src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`} 
+               frameBorder="0" 
+               allow="autoplay; encrypted-media" 
+               allowFullScreen
+               title="Trailer"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

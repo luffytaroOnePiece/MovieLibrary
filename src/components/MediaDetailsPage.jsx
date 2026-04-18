@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Play, Plus, Star, Calendar, Clock, X } from 'lucide-react';
 import { getCredits, getImages, getDetails, getVideos } from '../api/tmdbApi';
+import ActorDetailsPage from './ActorDetailsPage';
 import './MediaDetailsPage.css';
 
-const MediaDetailsPage = ({ media, onBack }) => {
+const MediaDetailsPage = ({ media, onBack, onMediaClick }) => {
   const [credits, setCredits] = useState(null);
   const [images, setImages] = useState(null);
   const [fullDetails, setFullDetails] = useState(null);
   const [trailerKey, setTrailerKey] = useState(null);
   const [showTrailer, setShowTrailer] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [selectedActor, setSelectedActor] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -92,7 +94,12 @@ const MediaDetailsPage = ({ media, onBack }) => {
             <h2 className="section-title">Top Cast</h2>
             <div className="cast-row">
               {topCast.map(actor => (
-                <div key={actor.cast_id || actor.id} className="cast-card">
+                <div 
+                  key={actor.cast_id || actor.id} 
+                  className="cast-card"
+                  onClick={() => setSelectedActor(actor.id)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <img 
                     src={actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : 'https://via.placeholder.com/200x200?text=No+Photo'}
                     alt={actor.name}
@@ -147,6 +154,19 @@ const MediaDetailsPage = ({ media, onBack }) => {
         <div className="lightbox-overlay" onClick={() => setLightboxImage(null)}>
           <button className="lightbox-close" onClick={() => setLightboxImage(null)}><X size={32}/></button>
           <img src={lightboxImage} alt="High Res Gallery" className="lightbox-image" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {selectedActor && (
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', minHeight: '100vh', zIndex: 1000, background: 'var(--bg-primary)' }}>
+          <ActorDetailsPage 
+            actorId={selectedActor} 
+            onBack={() => setSelectedActor(null)}
+            onMediaClick={(m) => {
+               setSelectedActor(null);
+               if (onMediaClick) onMediaClick(m);
+            }}
+          />
         </div>
       )}
 
