@@ -1,0 +1,128 @@
+.media-row-container {
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.row-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.row-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.row-posters {
+  display: flex;
+  overflow-x: auto;
+  gap: 16px;
+  padding: 10px 0 20px 0;
+  scrollbar-width: none; /* Firefox */
+  scroll-behavior: smooth;
+}
+
+.row-posters::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.row-poster-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transform-origin: center center;
+}
+
+.row-poster-wrap:hover {
+  transform: scale(1.05);
+  box-shadow: var(--glass-shadow);
+  z-index: 10;
+}
+
+.row-poster {
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+.row-poster.backdrop {
+  width: 280px;
+  aspect-ratio: 16/9;
+}
+
+.row-poster.portrait {
+  width: 160px;
+  aspect-ratio: 2/3;
+}
+
+.poster-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 30px 16px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.row-poster-wrap:hover .poster-overlay {
+  opacity: 1;
+}
+
+.poster-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.row-wrapper:hover .slider-arrow {
+  opacity: 1;
+}
+
+.slider-arrow:hover {
+  background: rgba(41, 151, 255, 0.8);
+}
+
+.slider-arrow.left {
+  left: -24px;
+}
+
+.slider-arrow.right {
+  right: -24px;
+}
+
+@media (max-width: 768px) {
+  .row-poster.backdrop {
+    width: 240px;
+  }
+  .slider-arrow {
+    display: none; /* Hide arrows on touch devices */
+  }
+}
