@@ -249,7 +249,6 @@ function App() {
             {searchResults.length > 0 ? (
               searchResults.map(item => (
                 <div key={item.id} className="grid-item" onClick={() => handleMediaClick(item)}>
-
                   <img
                     src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                     alt={item.title || item.name}
@@ -401,7 +400,6 @@ function App() {
                         }}
                       >
                         {isSelected && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#e50914', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}><span style={{ color: '#fff', fontSize: '28px', fontWeight: 'bold' }}>✓</span></div>}
-
                         <img
                           src={item.poster_path ? `https://image.tmdb.org/t/p/original${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                           alt={item.title || item.name}

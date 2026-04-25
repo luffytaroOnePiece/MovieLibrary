@@ -37,7 +37,6 @@ const MediaRow = ({ title, items, onMediaClick, mediaType, watchedIds = new Set(
                 className="row-poster-wrap"
                 onClick={() => onMediaClick(enhancedItem)}
               >
-
                 <img
                   className={`row-poster ${item.backdrop_path ? 'backdrop' : 'portrait'}`}
                   src={
