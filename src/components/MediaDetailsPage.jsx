@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Play, Check, Star, Calendar, Clock, X, Loader2 } from 'lucide-react';
-import { getCredits, getImages, getDetails, getVideos, toggleWatchlist } from '../api/tmdbApi';
+import { getCredits, getImages, getDetails, getVideos, getSeasonDetails, toggleWatchlist } from '../api/tmdbApi';
 import { getCustomYouTubeVideos } from '../api/youtubeApi';
 import ActorDetailsPage from './ActorDetailsPage';
 import './MediaDetailsPage.css';
@@ -15,6 +15,10 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick, watchedIds = new Set(),
   const [selectedActor, setSelectedActor] = useState(null);
   const [customYtVideos, setCustomYtVideos] = useState([]);
   const [isTogglingWatched, setIsTogglingWatched] = useState(false);
+  const [seasons, setSeasons] = useState([]);
+  const [selectedSeason, setSelectedSeason] = useState(null);
+  const [seasonEpisodes, setSeasonEpisodes] = useState([]);
+  const [isLoadingSeason, setIsLoadingSeason] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -38,6 +42,15 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick, watchedIds = new Set(),
           setTrailerKey(trailer.key);
         }
       }
+
+      // Fetch seasons for TV shows
+      if (type === 'tv' && detailRes && detailRes.seasons) {
+        const filteredSeasons = detailRes.seasons.filter(s => s.season_number > 0);
+        setSeasons(filteredSeasons);
+        if (filteredSeasons.length > 0) {
+          setSelectedSeason(filteredSeasons[0].season_number);
+        }
+      }
     };
 
     const fetchCustomVideos = async () => {
@@ -54,6 +67,23 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick, watchedIds = new Set(),
       fetchCustomVideos();
     }
   }, [media]);
+
+  // Fetch episodes when selected season changes
+  useEffect(() => {
+    if (selectedSeason === null || !media?.id) return;
+    const type = media.media_type || (media.name ? 'tv' : 'movie');
+    if (type !== 'tv') return;
+
+    const fetchEpisodes = async () => {
+      setIsLoadingSeason(true);
+      const data = await getSeasonDetails(media.id, selectedSeason);
+      if (data && data.episodes) {
+        setSeasonEpisodes(data.episodes);
+      }
+      setIsLoadingSeason(false);
+    };
+    fetchEpisodes();
+  }, [selectedSeason, media]);
 
   if (!media) return null;
 
@@ -245,6 +275,57 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick, watchedIds = new Set(),
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── Seasons & Episodes ── */}
+        {seasons.length > 0 && (
+          <div className="section-block" style={{ marginTop: '40px' }}>
+            <div className="seasons-header">
+              <h2 className="section-title" style={{ margin: 0 }}>Seasons & Episodes</h2>
+              <div className="season-selector">
+                {seasons.map(s => (
+                  <button
+                    key={s.season_number}
+                    className={`season-tab ${selectedSeason === s.season_number ? 'season-tab--active' : ''}`}
+                    onClick={() => setSelectedSeason(s.season_number)}
+                  >
+                    S{s.season_number}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {isLoadingSeason ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                <Loader2 size={32} className="spinner-icon" />
+              </div>
+            ) : (
+              <div className="episodes-grid">
+                {seasonEpisodes.map(ep => (
+                  <div key={ep.id} className="episode-card">
+                    <div className="episode-still">
+                      <img
+                        src={ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : 'https://via.placeholder.com/400x225?text=No+Image'}
+                        alt={ep.name}
+                        loading="lazy"
+                      />
+                      <span className="episode-number">E{ep.episode_number}</span>
+                      {ep.runtime && <span className="episode-runtime">{ep.runtime}m</span>}
+                    </div>
+                    <div className="episode-info">
+                      <h4 className="episode-name">{ep.name}</h4>
+                      {ep.air_date && <span className="episode-date">{new Date(ep.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                      {ep.overview && <p className="episode-overview">{ep.overview}</p>}
+                      {ep.vote_average > 0 && (
+                        <span className="episode-rating">
+                          <Star size={12} fill="currentColor" /> {ep.vote_average.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
