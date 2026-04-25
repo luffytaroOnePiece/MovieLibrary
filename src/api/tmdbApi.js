@@ -227,17 +227,29 @@ export const getAccountRated = async (accountId, page = 1, type = 'movies') => {
 
 // Batch Helper Functions
 export const batchToggleWatchlist = async (accountId, items, watchlistState) => {
-    if (!accountId || !items || !items.length) return { success: false, updated: 0 };
+    if (!accountId || !items || !items.length) {
+        console.warn("batchToggleWatchlist aborted: missing accountId or items");
+        return { success: false, updated: 0 };
+    }
 
     let successCount = 0;
     for (const item of items) {
         try {
             const mediaType = item.media_type || (item.name ? 'tv' : 'movie'); // Infer type if missing
+            console.log(`[Batch] Setting ${mediaType} ${item.id} -> watchlist: ${watchlistState}`);
             const res = await toggleWatchlist(accountId, mediaType, item.id, watchlistState);
-            if (res && res.success) successCount++;
+            
+            // TMDB returns success=true or status_code 1 (created), 12 (updated), 13 (deleted)
+            const isSuccess = res && (res.success || [1, 12, 13].includes(res.status_code));
+            
+            if (isSuccess) {
+                successCount++;
+            } else {
+                console.error(`[Batch] Failed validation for ${item.id}`, res);
+            }
 
-            // Tiny delay to be nice to the API rate limits (though TMDB allows 40 req/10sec usually)
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Tiny delay to be nice to the API rate limits
+            await new Promise(resolve => setTimeout(resolve, 80));
         } catch (e) {
             console.error(`Failed to batch toggle watchlist for ${item.id}:`, e);
         }

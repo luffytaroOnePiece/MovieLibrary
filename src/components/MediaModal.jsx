@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { X, Play, Info, Star, Calendar } from 'lucide-react';
-import { getVideos } from '../api/tmdbApi';
+import { X, Play, Info, Star, Calendar, Check, Loader2 } from 'lucide-react';
+import { getVideos, toggleWatchlist } from '../api/tmdbApi';
 import './MediaModal.css';
 
-const MediaModal = ({ media, onClose, onShowFullDetails }) => {
+const MediaModal = ({ media, onClose, onShowFullDetails, watchedIds = new Set(), accountId, onToggleWatched }) => {
   const [trailerKey, setTrailerKey] = useState(null);
   const [showTrailer, setShowTrailer] = useState(false);
+  const [isTogglingWatched, setIsTogglingWatched] = useState(false);
 
   useEffect(() => {
     // Prevent background scrolling when modal is open
     document.body.style.overflow = 'hidden';
-    
+
     const fetchTrailer = async () => {
-       const type = media?.media_type || (media?.name ? 'tv' : 'movie');
-       if(!media || !media.id) return;
-       const res = await getVideos(media.id, type);
-       if (res && res.results) {
-         const t = res.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || res.results[0];
-         if (t && t.site === 'YouTube') {
-           setTrailerKey(t.key);
-         }
-       }
+      const type = media?.media_type || (media?.name ? 'tv' : 'movie');
+      if (!media || !media.id) return;
+      const res = await getVideos(media.id, type);
+      if (res && res.results) {
+        const t = res.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || res.results[0];
+        if (t && t.site === 'YouTube') {
+          setTrailerKey(t.key);
+        }
+      }
     };
     fetchTrailer();
 
@@ -31,10 +32,33 @@ const MediaModal = ({ media, onClose, onShowFullDetails }) => {
 
   if (!media) return null;
 
-  const backdropUrl = media.backdrop_path 
-    ? `https://image.tmdb.org/t/p/original${media.backdrop_path}` 
+  const isWatched = watchedIds.has(media.id);
+
+  const handleToggleWatched = async (e) => {
+    e.stopPropagation();
+    if (!accountId || isTogglingWatched) return;
+    setIsTogglingWatched(true);
+    try {
+      const mediaType = media.media_type || (media.name ? 'tv' : 'movie');
+      const newState = !isWatched;
+      const res = await toggleWatchlist(accountId, mediaType, media.id, newState);
+      const isSuccess = res && (res.success || [1, 12, 13].includes(res.status_code));
+      if (isSuccess && onToggleWatched) {
+        onToggleWatched(media.id, newState);
+      } else if (!isSuccess) {
+        console.error('Failed to toggle watchlist:', res);
+      }
+    } catch (err) {
+      console.error('Toggle watched error:', err);
+    } finally {
+      setIsTogglingWatched(false);
+    }
+  };
+
+  const backdropUrl = media.backdrop_path
+    ? `https://image.tmdb.org/t/p/original${media.backdrop_path}`
     : '';
-    
+
   const title = media.title || media.name;
   const releaseYear = (media.release_date || media.first_air_date || '').split('-')[0];
   const genres = media.genres ? media.genres.map(g => g.name).join(', ') : '';
@@ -47,12 +71,12 @@ const MediaModal = ({ media, onClose, onShowFullDetails }) => {
         </button>
 
         <div className="modal-hero">
-          <div 
-            className="modal-backdrop" 
+          <div
+            className="modal-backdrop"
             style={{ backgroundImage: `url(${backdropUrl})` }}
           />
           <div className="modal-gradient" />
-          
+
           <div className="modal-hero-content">
             <h2 className="title-large modal-title">{title}</h2>
             <div className="modal-meta-actions" style={{ flexWrap: 'wrap', gap: '12px', width: '100%' }}>
@@ -62,15 +86,36 @@ const MediaModal = ({ media, onClose, onShowFullDetails }) => {
                 </button>
               )}
               {onShowFullDetails && (
-                <button 
-                  className="btn-secondary" 
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 32px', borderRadius: '40px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: '#fff', fontSize: '1.1rem', fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' }} 
+                <button
+                  className="btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 32px', borderRadius: '40px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: '#fff', fontSize: '1.1rem', fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' }}
                   onClick={onShowFullDetails}
                 >
                   <Info size={20} /> Full Details
                 </button>
               )}
-              
+              {accountId && (
+                <button
+                  onClick={handleToggleWatched}
+                  disabled={isTogglingWatched}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '14px 28px', borderRadius: '40px',
+                    background: isWatched ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.15)',
+                    backdropFilter: 'blur(10px)',
+                    color: isWatched ? '#10b981' : '#fff',
+                    fontSize: '1.05rem', fontWeight: 600,
+                    border: isWatched ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.15)',
+                    cursor: isTogglingWatched ? 'not-allowed' : 'pointer',
+                    opacity: isTogglingWatched ? 0.6 : 1,
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  {isTogglingWatched ? <Loader2 size={18} className="spinner-icon" /> : <Check size={18} />}
+                  {isWatched ? 'Watched' : 'Mark as Watched'}
+                </button>
+              )}
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto', fontSize: '1rem', color: '#fff', background: 'rgba(0,0,0,0.5)', padding: '10px 20px', borderRadius: '30px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <span style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Star size={16} fill="currentColor" /> {(media.vote_average * 10).toFixed(0)}% Match
@@ -91,7 +136,7 @@ const MediaModal = ({ media, onClose, onShowFullDetails }) => {
             </div>
             <p className="modal-overview text-regular">{media.overview}</p>
           </div>
-          
+
           <div className="modal-info-side">
             {genres && (
               <div className="info-item">
@@ -111,16 +156,16 @@ const MediaModal = ({ media, onClose, onShowFullDetails }) => {
 
       {showTrailer && trailerKey && (
         <div className="lightbox-overlay" style={{ zIndex: 3000 }} onClick={(e) => { e.stopPropagation(); setShowTrailer(false); }}>
-          <button className="lightbox-close" onClick={(e) => { e.stopPropagation(); setShowTrailer(false); }}><X size={32}/></button>
+          <button className="lightbox-close" onClick={(e) => { e.stopPropagation(); setShowTrailer(false); }}><X size={32} /></button>
           <div className="video-container" onClick={e => e.stopPropagation()}>
-            <iframe 
-               width="100%" 
-               height="100%" 
-               src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`} 
-               frameBorder="0" 
-               allow="autoplay; encrypted-media" 
-               allowFullScreen
-               title="Trailer"
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+              frameBorder="0"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title="Trailer"
             />
           </div>
         </div>

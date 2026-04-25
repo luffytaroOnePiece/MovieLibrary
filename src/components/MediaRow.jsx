@@ -8,10 +8,10 @@ const MediaRow = ({ title, items, onMediaClick, mediaType, watchedIds = new Set(
   const scroll = (direction) => {
     if (rowRef.current) {
       const { scrollLeft, clientWidth } = rowRef.current;
-      const scrollTo = direction === 'left' 
+      const scrollTo = direction === 'left'
         ? scrollLeft - clientWidth + 100
         : scrollLeft + clientWidth - 100;
-        
+
       rowRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
   };
@@ -21,29 +21,29 @@ const MediaRow = ({ title, items, onMediaClick, mediaType, watchedIds = new Set(
   return (
     <div className="media-row-container padded-container">
       <h2 className="title-medium row-title">{title}</h2>
-      
+
       <div className="row-wrapper">
         <button className="slider-arrow left" onClick={() => scroll('left')}>
           <ChevronLeft size={32} />
         </button>
-        
+
         <div className="row-posters" ref={rowRef}>
           {items.map((item) => {
             // Include mediaType so the click handler knows what it is even if not explicit in search results
             const enhancedItem = { ...item, media_type: item.media_type || mediaType };
             return (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 className="row-poster-wrap"
                 onClick={() => onMediaClick(enhancedItem)}
               >
-                {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, left: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched ✅</div>}
+                {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, left: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched</div>}
                 <img
                   className={`row-poster ${item.backdrop_path ? 'backdrop' : 'portrait'}`}
                   src={
-                    item.backdrop_path 
+                    item.backdrop_path
                       ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
-                      : item.poster_path 
+                      : item.poster_path
                         ? `https://image.tmdb.org/t/p/original${item.poster_path}`
                         : 'https://via.placeholder.com/500x281?text=No+Image'
                   }
@@ -57,7 +57,7 @@ const MediaRow = ({ title, items, onMediaClick, mediaType, watchedIds = new Set(
             );
           })}
         </div>
-        
+
         <button className="slider-arrow right" onClick={() => scroll('right')}>
           <ChevronRight size={32} />
         </button>

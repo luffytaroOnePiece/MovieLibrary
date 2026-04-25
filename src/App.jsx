@@ -46,7 +46,7 @@ function App() {
   const [listSort, setListSort] = useState('default');
   const [listFilter, setListFilter] = useState('all');
   const [listSearchQuery, setListSearchQuery] = useState('');
-  
+
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedBulkIds, setSelectedBulkIds] = useState(new Set());
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
@@ -76,44 +76,74 @@ function App() {
         const accountInfo = await getAccountDetails();
         if (accountInfo && accountInfo.id) {
           setAccountId(accountInfo.id);
-          
-          const movies = await getAccountWatchlist(accountInfo.id, 1, 'movies');
-          if (movies && movies.results) setMyListMovies(movies.results);
-          
-          const tv = await getAccountWatchlist(accountInfo.id, 1, 'tv');
-          if (tv && tv.results) setMyListTv(tv.results);
+
+          // Fetch ALL pages of watchlist movies
+          let allWatchlistMovies = [];
+          const moviesPage1 = await getAccountWatchlist(accountInfo.id, 1, 'movies');
+          if (moviesPage1 && moviesPage1.results) {
+            allWatchlistMovies = [...moviesPage1.results];
+            if (moviesPage1.total_pages > 1) {
+              const moviePagePromises = [];
+              for (let p = 2; p <= Math.min(moviesPage1.total_pages, 50); p++) {
+                moviePagePromises.push(getAccountWatchlist(accountInfo.id, p, 'movies'));
+              }
+              const moviePages = await Promise.all(moviePagePromises);
+              moviePages.forEach(page => {
+                if (page && page.results) allWatchlistMovies = allWatchlistMovies.concat(page.results);
+              });
+            }
+          }
+          setMyListMovies(allWatchlistMovies);
+
+          // Fetch ALL pages of watchlist TV
+          let allWatchlistTv = [];
+          const tvPage1 = await getAccountWatchlist(accountInfo.id, 1, 'tv');
+          if (tvPage1 && tvPage1.results) {
+            allWatchlistTv = [...tvPage1.results];
+            if (tvPage1.total_pages > 1) {
+              const tvPagePromises = [];
+              for (let p = 2; p <= Math.min(tvPage1.total_pages, 50); p++) {
+                tvPagePromises.push(getAccountWatchlist(accountInfo.id, p, 'tv'));
+              }
+              const tvPages = await Promise.all(tvPagePromises);
+              tvPages.forEach(page => {
+                if (page && page.results) allWatchlistTv = allWatchlistTv.concat(page.results);
+              });
+            }
+          }
+          setMyListTv(allWatchlistTv);
 
           const listsRes = await getAccountLists(accountInfo.id, 1);
           if (listsRes && listsRes.results) {
             const tempWatched = new Set();
-            
-            // Also treat native TMDB Watchlist elements as 'Watched' 
-            if (movies && movies.results) movies.results.forEach(m => tempWatched.add(m.id));
-            if (tv && tv.results) tv.results.forEach(t => tempWatched.add(t.id));
+
+            // Treat ALL native TMDB Watchlist items as 'Watched'
+            allWatchlistMovies.forEach(m => tempWatched.add(m.id));
+            allWatchlistTv.forEach(t => tempWatched.add(t.id));
 
             const enrichedLists = await Promise.all(
               listsRes.results.map(async (list) => {
                 const details = await getListDetails(list.id, 1);
                 let items = details?.items || details?.results || [];
-                
+
                 // Fetch ALL pages of the list to ensure full tracking
                 if (details && details.total_pages > 1) {
-                   const pagePromises = [];
-                   for (let p = 2; p <= Math.min(details.total_pages, 20); p++) {
-                      pagePromises.push(getListDetails(list.id, p));
-                   }
-                   const pagesRes = await Promise.all(pagePromises);
-                   pagesRes.forEach(page => {
-                      if (page && (page.items || page.results)) {
-                         items = items.concat(page.items || page.results);
-                      }
-                   });
+                  const pagePromises = [];
+                  for (let p = 2; p <= Math.min(details.total_pages, 20); p++) {
+                    pagePromises.push(getListDetails(list.id, p));
+                  }
+                  const pagesRes = await Promise.all(pagePromises);
+                  pagesRes.forEach(page => {
+                    if (page && (page.items || page.results)) {
+                      items = items.concat(page.items || page.results);
+                    }
+                  });
                 }
-                
+
                 const latestItem = items.length > 0 ? items[0] : null;
 
                 if (list.name.toLowerCase() === 'watched' || list.name.toLowerCase() === 'watched list' || list.name.toLowerCase() === 'watch list') {
-                   items.forEach(i => tempWatched.add(i.id));
+                  items.forEach(i => tempWatched.add(i.id));
                 }
 
                 return {
@@ -150,7 +180,7 @@ function App() {
         setSearchResults(res.results.filter(item => item.media_type !== 'person'));
       }
     };
-    
+
     // Debounce search
     const timeoutId = setTimeout(handleSearch, 500);
     return () => clearTimeout(timeoutId);
@@ -169,7 +199,7 @@ function App() {
         if (!details) break;
 
         if (!combinedDetails) combinedDetails = { ...details };
-        
+
         const pageItems = details.items || details.results || [];
         allItems = [...allItems, ...pageItems];
         totalPages = details.total_pages || 1;
@@ -215,10 +245,10 @@ function App() {
             {searchResults.length > 0 ? (
               searchResults.map(item => (
                 <div key={item.id} className="grid-item" onClick={() => handleMediaClick(item)}>
-                  {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched ✅</div>}
-                  <img 
-                    src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'} 
-                    alt={item.title || item.name} 
+                  {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched</div>}
+                  <img
+                    src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                    alt={item.title || item.name}
                     className="grid-poster"
                     loading="lazy"
                   />
@@ -273,7 +303,7 @@ function App() {
       if (selectedCustomList) {
         return (
           <div className="search-results-section padded-container" style={{ paddingTop: '100px', position: 'relative' }}>
-            <button 
+            <button
               onClick={() => { setSelectedCustomList(null); setListSearchQuery(''); setIsSelectionMode(false); setSelectedBulkIds(new Set()); }}
               style={{ background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.9rem', border: 'none', marginBottom: '20px', cursor: 'pointer', padding: 0 }}
             >
@@ -301,7 +331,7 @@ function App() {
                 >
                   {isSelectionMode ? 'Cancel Selection' : 'Select'}
                 </button>
-                <input 
+                <input
                   type="text"
                   placeholder="Search list..."
                   value={listSearchQuery}
@@ -310,18 +340,18 @@ function App() {
                   onFocus={(e) => e.target.style.borderBottom = '1px solid #fff'}
                   onBlur={(e) => e.target.style.borderBottom = '1px solid rgba(255,255,255,0.3)'}
                 />
-                <AppleSelect 
-                  value={listFilter} 
-                  onChange={setListFilter} 
+                <AppleSelect
+                  value={listFilter}
+                  onChange={setListFilter}
                   options={[
                     { value: 'all', label: 'All Default' },
                     { value: 'watched', label: 'Watched' },
                     { value: 'unwatched', label: 'Unwatched' }
                   ]}
                 />
-                <AppleSelect 
-                  value={listSort} 
-                  onChange={setListSort} 
+                <AppleSelect
+                  value={listSort}
+                  onChange={setListSort}
                   options={[
                     { value: 'default', label: 'Default Sort' },
                     { value: 'date', label: 'Release Date' },
@@ -331,7 +361,7 @@ function App() {
                 />
               </div>
             </div>
-            {(()=>{
+            {(() => {
               let listItems = selectedCustomList.items || selectedCustomList.results || [];
 
               if (listSearchQuery) {
@@ -341,43 +371,44 @@ function App() {
 
               if (listFilter === 'watched') listItems = listItems.filter(i => watchedIds.has(i.id));
               if (listFilter === 'unwatched') listItems = listItems.filter(i => !watchedIds.has(i.id));
-              if (listSort === 'name') listItems = [...listItems].sort((a,b) => (a.title||a.name).localeCompare(b.title||b.name));
-              if (listSort === 'date') listItems = [...listItems].sort((a,b) => new Date(b.release_date||b.first_air_date) - new Date(a.release_date||a.first_air_date));
-              if (listSort === 'tmdb_rating') listItems = [...listItems].sort((a,b) => b.vote_average - a.vote_average);
-              
+              if (listSort === 'name') listItems = [...listItems].sort((a, b) => (a.title || a.name).localeCompare(b.title || b.name));
+              if (listSort === 'date') listItems = [...listItems].sort((a, b) => new Date(b.release_date || b.first_air_date) - new Date(a.release_date || a.first_air_date));
+              if (listSort === 'tmdb_rating') listItems = [...listItems].sort((a, b) => b.vote_average - a.vote_average);
+
               return listItems.length > 0 ? (
                 <div className={`media-grid ${isSelectionMode ? 'selection-active' : ''}`}>
                   {listItems.map(item => {
                     const isSelected = selectedBulkIds.has(item.id);
                     return (
-                    <div 
-                      key={item.id} 
-                      className="grid-item" 
-                      onClick={() => handleMediaClick(item)}
-                      style={{ 
-                         transform: isSelectionMode && !isSelected ? 'scale(0.95)' : 'scale(1)',
-                         opacity: isSelectionMode && !isSelected ? 0.6 : 1,
-                         border: isSelected ? '3px solid #e50914' : '3px solid transparent',
-                         borderRadius: '16px',
-                         transition: 'all 0.2s ease',
-                         position: 'relative',
-                         overflow: 'hidden'
-                      }}
-                    >
-                      {isSelected && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#e50914', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}><span style={{ color: '#fff', fontSize: '28px', fontWeight: 'bold' }}>✓</span></div>}
-                      {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched ✅</div>}
-                      <img 
-                        src={item.poster_path ? `https://image.tmdb.org/t/p/original${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'} 
-                        alt={item.title || item.name} 
-                        className="grid-poster"
-                        loading="lazy"
-                      />
-                      <div className="grid-info">
-                        <p className="grid-title">{item.title || item.name}</p>
-                        <p className="grid-year">{((item.release_date || item.first_air_date) || '').split('-')[0]}</p>
+                      <div
+                        key={item.id}
+                        className="grid-item"
+                        onClick={() => handleMediaClick(item)}
+                        style={{
+                          transform: isSelectionMode && !isSelected ? 'scale(0.95)' : 'scale(1)',
+                          opacity: isSelectionMode && !isSelected ? 0.6 : 1,
+                          border: isSelected ? '3px solid #e50914' : '3px solid transparent',
+                          borderRadius: '16px',
+                          transition: 'all 0.2s ease',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {isSelected && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#e50914', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}><span style={{ color: '#fff', fontSize: '28px', fontWeight: 'bold' }}>✓</span></div>}
+                        {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched</div>}
+                        <img
+                          src={item.poster_path ? `https://image.tmdb.org/t/p/original${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                          alt={item.title || item.name}
+                          className="grid-poster"
+                          loading="lazy"
+                        />
+                        <div className="grid-info">
+                          <p className="grid-title">{item.title || item.name}</p>
+                          <p className="grid-year">{((item.release_date || item.first_air_date) || '').split('-')[0]}</p>
+                        </div>
                       </div>
-                    </div>
-                  )})}
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="no-results">This list is empty or your search yielded no matches.</p>
@@ -407,20 +438,22 @@ function App() {
                   disabled={isSubmittingBulk}
                   onClick={async () => {
                     setIsSubmittingBulk(true);
-                    
+
                     const listItems = selectedCustomList.items || selectedCustomList.results || [];
                     const itemsToProcess = listItems.filter(i => selectedBulkIds.has(i.id));
-                    
+
                     const res = await batchToggleWatchlist(accountId, itemsToProcess, true);
-                    
+
                     if (res && res.success) {
-                       setWatchedIds(prev => {
-                          const next = new Set(prev);
-                          itemsToProcess.forEach(i => next.add(i.id));
-                          return next;
-                       });
+                      setWatchedIds(prev => {
+                        const next = new Set(prev);
+                        itemsToProcess.forEach(i => next.add(i.id));
+                        return next;
+                      });
+                    } else {
+                      alert(`TMDB API Error: The watchlist write failed. Check your browser console. It is highly likely your TMDB Access Token in the .env file is strictly "Read Only" and requires Write/User permissions to modify watchlists!`);
                     }
-                    
+
                     setIsSubmittingBulk(false);
                     setIsSelectionMode(false);
                     setSelectedBulkIds(new Set());
@@ -440,7 +473,7 @@ function App() {
                     transition: 'opacity 0.2s'
                   }}
                 >
-                  {isSubmittingBulk ? <Loader2 size={18} className="spinner-icon"/> : null}
+                  {isSubmittingBulk ? <Loader2 size={18} className="spinner-icon" /> : null}
                   {isSubmittingBulk ? 'Logging to memory...' : 'Mark as Watched'}
                 </button>
               </div>
@@ -467,12 +500,12 @@ function App() {
               <div className="custom-lists-grid">
                 {customLists.map(list => {
                   const imagePath = list.latest_backdrop || list.backdrop_path || list.poster_path;
-                  const imageUrl = imagePath 
-                    ? `https://image.tmdb.org/t/p/original${imagePath}` 
+                  const imageUrl = imagePath
+                    ? `https://image.tmdb.org/t/p/original${imagePath}`
                     : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1000&auto=format&fit=crop';
                   return (
-                    <div 
-                      key={list.id} 
+                    <div
+                      key={list.id}
                       className="custom-list-card"
                       onClick={() => fetchFullListDetails(list)}
                     >
@@ -504,14 +537,28 @@ function App() {
     );
   };
 
+  const handleToggleWatched = (mediaId, newState) => {
+    setWatchedIds(prev => {
+      const next = new Set(prev);
+      if (newState) {
+        next.add(mediaId);
+      } else {
+        next.delete(mediaId);
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="app-container">
       {fullPageMedia ? (
-        <MediaDetailsPage 
-          media={fullPageMedia} 
+        <MediaDetailsPage
+          media={fullPageMedia}
           onBack={() => setFullPageMedia(null)}
           onMediaClick={(m) => setFullPageMedia(m)}
           watchedIds={watchedIds}
+          accountId={accountId}
+          onToggleWatched={handleToggleWatched}
         />
       ) : (
         <>
@@ -519,7 +566,7 @@ function App() {
           <main className="main-content">
             {renderContent()}
           </main>
-          {selectedMedia && <MediaModal media={selectedMedia} onClose={closeMenu} onShowFullDetails={() => { setFullPageMedia(selectedMedia); closeMenu(); }} />}
+          {selectedMedia && <MediaModal media={selectedMedia} onClose={closeMenu} onShowFullDetails={() => { setFullPageMedia(selectedMedia); closeMenu(); }} watchedIds={watchedIds} accountId={accountId} onToggleWatched={handleToggleWatched} />}
         </>
       )}
     </div>
