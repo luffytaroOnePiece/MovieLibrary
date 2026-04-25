@@ -312,6 +312,7 @@ function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px', flexWrap: 'wrap', gap: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
               <h2 className="title-medium search-title" style={{ margin: 0, fontSize: '2.5rem', letterSpacing: '-0.5px' }}>{selectedCustomList.name}</h2>
               <div className="list-controls" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                {import.meta.env.DEV && (
                 <button
                   onClick={() => {
                     setIsSelectionMode(!isSelectionMode);
@@ -331,6 +332,7 @@ function App() {
                 >
                   {isSelectionMode ? 'Cancel Selection' : 'Select'}
                 </button>
+                )}
                 <input
                   type="text"
                   placeholder="Search list..."
@@ -415,7 +417,7 @@ function App() {
               )
             })()}
 
-            {isSelectionMode && selectedBulkIds.size > 0 && (
+            {import.meta.env.DEV && isSelectionMode && selectedBulkIds.size > 0 && (
               <div style={{
                 position: 'fixed',
                 bottom: '40px',

@@ -17,7 +17,7 @@
 
 .modal-content {
   width: 100%;
-  max-width: 850px;
+  max-width: 1050px;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -121,7 +121,7 @@
 }
 
 .modal-body {
-  padding: 0 40px 40px;
+  padding: 24px 40px 40px;
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 40px;
@@ -130,9 +130,28 @@
 .modal-stats {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
   margin-bottom: 20px;
   font-weight: 500;
+}
+
+.modal-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.release-year,
+.duration {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.stat-dot {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 8px;
+  line-height: 1;
+  user-select: none;
 }
 
 .match-score {

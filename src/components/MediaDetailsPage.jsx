@@ -195,7 +195,7 @@ const MediaDetailsPage = ({ media, onBack, onMediaClick, watchedIds = new Set(),
                 <Play size={20} fill="currentColor" /> Play Trailer
               </button>
             )}
-            {accountId && (
+            {import.meta.env.DEV && accountId && (
               <button
                 onClick={handleToggleWatched}
                 disabled={isTogglingWatched}

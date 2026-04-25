@@ -94,7 +94,7 @@ const MediaModal = ({ media, onClose, onShowFullDetails, watchedIds = new Set(),
                   <Info size={20} /> Full Details
                 </button>
               )}
-              {accountId && (
+              {import.meta.env.DEV && accountId && (
                 <button
                   onClick={handleToggleWatched}
                   disabled={isTogglingWatched}
@@ -130,8 +130,15 @@ const MediaModal = ({ media, onClose, onShowFullDetails, watchedIds = new Set(),
           <div className="modal-info-main">
             <div className="modal-stats">
               <span className="match-score">{(media.vote_average * 10).toFixed(0)}% Match</span>
+              <span className="stat-dot">•</span>
               <span className="release-year">{releaseYear}</span>
-              {media.runtime && <span className="duration">{Math.floor(media.runtime / 60)}h {media.runtime % 60}m</span>}
+              {media.runtime && (
+                <>
+                  <span className="stat-dot">•</span>
+                  <span className="duration">{Math.floor(media.runtime / 60)}h {media.runtime % 60}m</span>
+                </>
+              )}
+              <span className="stat-dot">•</span>
               <span className="quality-badge">HD</span>
             </div>
             <p className="modal-overview text-regular">{media.overview}</p>
