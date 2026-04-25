@@ -41,6 +41,7 @@ function App() {
   const [customLists, setCustomLists] = useState([]);
   const [selectedCustomList, setSelectedCustomList] = useState(null);
   const [isLoadingList, setIsLoadingList] = useState(false);
+  const [isLoadingMyLists, setIsLoadingMyLists] = useState(true);
   const [fullPageMedia, setFullPageMedia] = useState(null);
   const [watchedIds, setWatchedIds] = useState(new Set());
   const [listSort, setListSort] = useState('default');
@@ -72,6 +73,7 @@ function App() {
     };
 
     const fetchAccountData = async () => {
+      setIsLoadingMyLists(true);
       try {
         const accountInfo = await getAccountDetails();
         if (accountInfo && accountInfo.id) {
@@ -159,6 +161,8 @@ function App() {
         }
       } catch (err) {
         console.error("Failed to load account watchlist:", err);
+      } finally {
+        setIsLoadingMyLists(false);
       }
     };
 
@@ -245,7 +249,7 @@ function App() {
             {searchResults.length > 0 ? (
               searchResults.map(item => (
                 <div key={item.id} className="grid-item" onClick={() => handleMediaClick(item)}>
-                  {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched</div>}
+
                   <img
                     src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                     alt={item.title || item.name}
@@ -291,11 +295,11 @@ function App() {
     }
 
     if (activeTab === 'My List') {
-      if (isLoadingList) {
+      if (isLoadingList || isLoadingMyLists) {
         return (
           <div className="search-results-section padded-container" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <Loader2 size={48} className="spinner-icon" />
-            <p style={{ marginTop: '20px', color: 'var(--text-secondary)', fontSize: '18px' }}>Loading your list...</p>
+            <p style={{ marginTop: '20px', color: 'var(--text-secondary)', fontSize: '18px' }}>Loading your lists...</p>
           </div>
         );
       }
@@ -397,7 +401,7 @@ function App() {
                         }}
                       >
                         {isSelected && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#e50914', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}><span style={{ color: '#fff', fontSize: '28px', fontWeight: 'bold' }}>✓</span></div>}
-                        {watchedIds.has(item.id) && <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', zIndex: 10 }}>Watched</div>}
+
                         <img
                           src={item.poster_path ? `https://image.tmdb.org/t/p/original${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                           alt={item.title || item.name}
